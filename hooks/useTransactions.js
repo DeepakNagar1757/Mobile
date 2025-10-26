@@ -1,73 +1,125 @@
-import { use, useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import { Alert } from "react-native";
+import { API_URL } from "../constants/api";
 
-const API_URL = "https://localhost:5002/api";
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const useTransactions = (userId) => {
-    const [transactions, setTransactions] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [Summary, setSummary] = useState({
-        balance : 0,
-        income : 0,
-        expense : 0
-    })
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [Summary, setSummary] = useState({
+    balance: 0,
+    income: 0,
+    expense: 0,
+  });
 
-    const fetchTransactions = useCallback( async () => {
-        try {
-            const response = await fetch(`${API_URL}/transactions/user/${userId}`);
-            const data = await response.json();
-            setTransactions(data);
-        } catch (error) {
-            console.log("failed loading transactions", error);            
+  const inFlight = useRef(false);
+
+  const fetchWithRetries = useCallback(
+    async (url, options = {}, maxRetries = 3) => {
+      let attempt = 0;
+      let backoff = 500;
+      while (attempt <= maxRetries) {
+        const res = await fetch(url, options);
+        const text = await res.text();
+        console.log(`[useTransactions] ${url} status:`, res.status, text);
+        if (res.ok) {
+          try {
+            return JSON.parse(text);
+          } catch (e) {
+            throw new Error(`Invalid JSON from ${url}: ${text.slice(0, 200)}`);
+          }
         }
-    }, [userId]);
-
-
-    const fetchSummary = useCallback( async () =>{
-        try {
-            const response = await fetch(`${API_URL}/transactions/summary/${userId}`);
-            const data = await response.json();
-            setSummary(data);
-        } catch (error) {
-            console.log("failed loading summary", error);            
+        if (res.status === 429 && attempt < maxRetries) {
+          // backoff then retry
+          await sleep(backoff);
+          backoff *= 2;
+          attempt += 1;
+          continue;
         }
-    },[userId]);
+        // other error or exhausted retries
+        throw new Error(`Server ${res.status}: ${text}`);
+      }
+      throw new Error("Retries exhausted");
+    },
+    []
+  );
 
-    const loadData = useCallback( async () =>{
-        if (!userId) return;
-        setLoading(true);
-        try {
-            await Promise.all([fetchTransactions(), fetchSummary()]);
-        } catch (error) {
-            console.log("Error loading data : ", error);            
-        } finally {
-            setLoading(false);
-        }
-    },[fetchTransactions,fetchSummary,userId]);
-
-
-    const deleteTransaction = useCallback( async (id) =>{
-        try {
-            const response = await fetch(`${API_URL}/transactions/${id}`, {mehod: 'DELETE'});
-            if (!response.ok) throw new Error("Failed to Delete Transaction");
-            
-            // Refresh transactions and summary after deletion
-            loadData();
-            Alert.alert("Success", "Transaction deleted successfully");
-        } catch (error) {
-            log("failed deleting transaction", error);
-            Alert.alert("Error", "Failed to delete transaction");            
-        }
-    })
-
-    return {
-        transactions,
-        loading,
-        Summary,
-        loadData,
-        deleteTransaction
+  const fetchTransactions = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const url = `${API_URL}/transactions/${userId}`;
+      const data = await fetchWithRetries(url, {
+        headers: { "Content-Type": "application/json", "x-user-id": userId },
+      });
+      setTransactions(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.log("failed loading transactions", err);
+      setError(err);
     }
-}
+  }, [userId, fetchWithRetries]);
+
+  const fetchSummary = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const url = `${API_URL}/transactions/summary/${userId}`;
+      const data = await fetchWithRetries(url, {
+        headers: { "Content-Type": "application/json", "x-user-id": userId },
+      });
+      setSummary(data || Summary);
+    } catch (err) {
+      console.log("failed loading summary", err);
+      setError(err);
+    }
+  }, [userId, fetchWithRetries]);
+
+  const loadData = useCallback(async () => {
+    if (!userId) return;
+    if (inFlight.current) return; // prevent concurrent calls
+    inFlight.current = true;
+    setLoading(true);
+    try {
+      await Promise.all([fetchTransactions(), fetchSummary()]);
+    } catch (err) {
+      console.log("Error loading data : ", err);
+      setError(err);
+    } finally {
+      setLoading(false);
+      inFlight.current = false;
+    }
+  }, [userId, fetchTransactions, fetchSummary]);
+
+  const deleteTransaction = useCallback(
+    async (id) => {
+      if (!id) return;
+      try {
+        const res = await fetch(`${API_URL}/transactions/${id}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json", "x-user-id": userId },
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(`Failed to Delete Transaction: ${res.status} ${txt}`);
+        }
+        await loadData();
+        Alert.alert("Success", "Transaction deleted successfully");
+      } catch (err) {
+        console.log("failed deleting transaction", err);
+        Alert.alert("Error", "Failed to delete transaction");
+      }
+    },
+    [loadData, userId]
+  );
+
+  return {
+    transactions,
+    loading,
+    Summary,
+    loadData,
+    deleteTransaction,
+    error,
+  };
+};
 
 export default useTransactions;
