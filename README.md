@@ -1,50 +1,166 @@
-# Welcome to your Expo app 👋
+# Mobile Wallet App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Mobile Wallet App** is a cross-platform mobile application built with **React Native (Expo)** that allows users to manage their wallet, send and receive money, and track transaction history. The app connects to the **Wallet API** backend for all wallet operations.
 
-## Get started
+---
 
-1. Install dependencies
+## Table of Contents
 
-   ```bash
-   npm install
-   ```
+- [Features](#features)  
+- [Tech Stack](#tech-stack)  
+- [Project Structure](#project-structure)  
+- [Getting Started](#getting-started)  
+- [API Integration](#api-integration)  
+- [Example API Requests](#example-api-requests)  
+- [Screenshots](#screenshots)  
+- [Contributing](#contributing)  
+- [License](#license)  
+- [Contact](#contact)
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## Features
 
-In the output, you'll find options to open the app in a
+- User registration and login  
+- JWT-based authentication  
+- View wallet balance  
+- Send and receive money  
+- Transaction history  
+- Responsive UI for mobile devices  
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Tech Stack
 
-## Get a fresh project
+- **Framework:** React Native with Expo  
+- **Language:** TypeScript / JavaScript  
+- **Navigation:** React Navigation  
+- **State Management:** React Context / Hooks  
+- **Networking:** Axios (for API requests)  
+- **Styling:** Styled Components / CSS-in-JS  
+- **Backend API:** [Wallet API](https://github.com/DeepakNagar1757/Wallet-Api)  
 
-When you're ready, run:
+---
 
+## Project Structure
+
+Mobile/
+├── app/ # Main app entry points
+├── assets/ # Images, icons, fonts
+├── components/ # Reusable UI components
+├── constants/ # App constants (colors, fonts)
+├── hooks/ # Custom hooks
+├── lib/ # API calls, utilities
+├── node_modules/ # Dependencies
+├── App.tsx # App root
+├── package.json # Project metadata & scripts
+├── tsconfig.json # TypeScript config
+└── .env # Environment variables (API URL, keys)
+
+yaml
+Copy code
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16+) and npm/yarn  
+- Expo CLI installed globally:
 ```bash
-npm run reset-project
-```
+npm install -g expo-cli
+Access to Wallet API backend
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Installation
+bash
+Copy code
+git clone https://github.com/DeepakNagar1757/Mobile.git
+cd Mobile
+npm install   # or yarn install
+Environment Variables
+Create a .env file in the root directory:
 
-## Learn more
+ini
+Copy code
+API_BASE_URL=https://your-backend-url.com/api
+Running the App
+bash
+Copy code
+# Start the Expo development server
+npm start   # or expo start
+Then run the app on:
 
-To learn more about developing your project with Expo, look at the following resources:
+Android Emulator / Device
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+iOS Simulator / Device
 
-## Join the community
+Expo Go App
 
-Join our community of developers creating universal apps.
+API Integration
+The app communicates with the Wallet API backend for all wallet-related features. Make sure the backend is running locally or deployed, and the API_BASE_URL is correctly set in .env.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Example API Requests
+1. Register a new user
+http
+Copy code
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securePassword123"
+}
+2. Login
+http
+Copy code
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securePassword123"
+}
+3. Get Wallet Balance
+http
+Copy code
+GET /api/wallet/balance
+Authorization: Bearer <your_token_here>
+4. Send Money
+http
+Copy code
+POST /api/wallet/transfer
+Authorization: Bearer <your_token_here>
+Content-Type: application/json
+
+{
+  "toUserId": "user_5678",
+  "amount": 100
+}
+5. View Transaction History
+http
+Copy code
+GET /api/wallet/transactions
+Authorization: Bearer <your_token_here>
+Note: Replace <your_token_here> with the JWT received after login.
+
+Contributing
+We welcome contributions!
+
+Fork the repository
+
+Create a branch: feature/<your-feature>
+
+Make your changes and commit
+
+Push to your fork and open a Pull Request
+
+License
+MIT License © 2025 Deepak Nagar
+
+Contact
+GitHub: DeepakNagar1757
+
+Email: your_email@example.com
+
+Backend API Repo: Wallet API
