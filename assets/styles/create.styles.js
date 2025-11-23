@@ -83,6 +83,7 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     paddingBottom: 16,
+    marginHorizontal: 16,
     marginBottom: 20,
   },
   currencySymbol: {
@@ -105,6 +106,7 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
+    marginHorizontal: 16,
     backgroundColor: COLORS.white,
   },
   inputIcon: {
@@ -122,10 +124,12 @@ export const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 15,
     marginTop: 10,
+    marginHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
   },
   categoryGrid: {
+    marginHorizontal: 16,
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,

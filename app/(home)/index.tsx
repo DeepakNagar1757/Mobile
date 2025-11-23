@@ -40,11 +40,12 @@ export default function Page() {
       {
         text: "Delete", style: "destructive", onPress: async () => {
           await deleteTransaction(transactionId)
-          await loadData()
         }
       }
     ])
   }
+
+  console.log('Rendering FlatList with transactions:', transactions)
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,14 +78,14 @@ export default function Page() {
         </View>
       </View>
 
-
       <FlatList
         style={styles.transactionsList}
         contentContainerStyle={styles.transactionsListContent}
+        keyExtractor={(item: any) => String(item.id)}
         data={transactions}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        renderItem={({ item }) => (
+        renderItem={({ item }: { item: any }) => (
           <TransactionItem item={item} onDelete={handleDelete} />
         )}
         ListEmptyComponent={() => (

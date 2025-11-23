@@ -42,6 +42,8 @@ export default function SignUpScreen() {
                 setError("That email address is already in use. please try another email address")                
             }else{
                 setError("An error occured. Please try again.")
+                console.log("Error creating Account :", err);
+                
             }
         }
     }

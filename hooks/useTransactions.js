@@ -67,7 +67,8 @@ const useTransactions = (userId) => {
       const data = await fetchWithRetries(url, {
         headers: { "Content-Type": "application/json", "x-user-id": userId },
       });
-      setSummary(data || Summary);
+      // safer: only update summary if server returned a valid object
+      setSummary((prev) => data ?? prev);
     } catch (err) {
       console.log("failed loading summary", err);
       setError(err);
@@ -93,6 +94,43 @@ const useTransactions = (userId) => {
   const deleteTransaction = useCallback(
     async (id) => {
       if (!id) return;
+      // optimistic update: remove from local state immediately and adjust summary,
+      // then perform server delete. If the delete fails, rollback and notify user.
+      let prevTransactions;
+      let prevSummary = Summary;
+      // capture previous transactions and remove the item optimistically
+      setTransactions((prev) => {
+        prevTransactions = prev;
+        return Array.isArray(prev) ? prev.filter((t) => String(t.id) !== String(id)) : [];
+      });
+
+      // compute deleted amount from previous transactions (if available)
+      const deletedItem = prevTransactions ? prevTransactions.find((t) => String(t.id) === String(id)) : null;
+      const deletedAmt = deletedItem ? parseFloat(String(deletedItem.amount)) || 0 : 0;
+
+      // update summary locally
+      setSummary((prev) => {
+        const prevBalance = parseFloat(String(prev.balance)) || 0;
+        const prevIncome = parseFloat(String(prev.income)) || 0;
+        const prevExpense = parseFloat(String(prev.expense)) || 0;
+
+        const newBalance = prevBalance - deletedAmt;
+        let newIncome = prevIncome;
+        let newExpense = prevExpense;
+        if (deletedAmt > 0) {
+          newIncome = prevIncome - deletedAmt;
+        } else {
+          // expenses are stored as negative amounts on the server
+          newExpense = prevExpense - deletedAmt;
+        }
+
+        return {
+          balance: newBalance.toFixed(2),
+          income: newIncome.toFixed(2),
+          expense: newExpense.toFixed(2),
+        };
+      });
+
       try {
         const res = await fetch(`${API_URL}/transactions/${id}`, {
           method: "DELETE",
@@ -100,9 +138,12 @@ const useTransactions = (userId) => {
         });
         if (!res.ok) {
           const txt = await res.text();
+          // rollback local state
+          setTransactions(() => prevTransactions || []);
+          setSummary(() => prevSummary || { balance: 0, income: 0, expense: 0 });
           throw new Error(`Failed to Delete Transaction: ${res.status} ${txt}`);
         }
-        await loadData();
+        // success: no further action (we already updated UI optimistically)
         Alert.alert("Success", "Transaction deleted successfully");
       } catch (err) {
         console.log("failed deleting transaction", err);
